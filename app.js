@@ -840,7 +840,7 @@ async function startDemo(){
     {fn:()=>go("s-kds"), s:"11 · Barista Ekranı", c:"Sipariş barista ekranında belirir (✓Ödendi), hazırlanır, 'Hazır Rafı'na isimle konur. Barista para almaz, üretir."},
     {fn:()=>go("s-loy"), s:"12 · Sadakat + Cüzdan", c:"Mevcut Pablo Coffee Go damgaları korunur, üstüne cüzdan + seviye gelir. Yükle, bonus kahve kazan."},
     {fn:()=>go("s-loy"), s:"13 · Askıda Kahve", c:"Dijital askıda kahve: müşteri bir yabancıya kahve ısmarlar, sayaç canlı işler. Duygusal bağ + ücretsiz PR — Pablo köprü olur."},
-    {fn:()=>go("s-biz"), s:"14 · İşletmeye Değeri", c:"Sahip ekranı: peşin yüklenen para, app cirosu, tekrar oranı, sıfır kasa kuyruğu. İşte ROI."},
+    {fn:()=>go("s-biz"), s:"14 · Pablo Ne Kazanır", c:"Sahip ekranı: daha az personel, yoğun saatte daha çok müşteri, ön ödemeli cüzdanla ekstra gelir, kolay ödemeyle sadakat — peşin nakit ve sıfır kasa kuyruğu. İşte ROI."},
     {fn:()=>go("s-splash"), s:"✓ Özet", c:"Çekirdek paket: kasayı kaldıran, sırayı bitiren, peşin nakit getiren, AI ile kolaylaşan sistem — mevcut app'inizin ÜSTÜNE. İstenirse eklenir: WhatsApp sipariş & Barista Cam. Final ürün Web, Android ve iOS için geliştirilecek. BBAI."},
   ];
   for(let i=0;i<steps.length;i++){
