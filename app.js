@@ -829,25 +829,25 @@ async function startDemo(){
   const steps=[
     {fn:()=>go("s-splash"), s:"1 · Başlangıç", c:"Müşteri QR'ı okutur. Şube tanınır + tezgah yoğunluğu CANLI görünür (sakin/yoğun) — kasaya gitmek yok."},
     {fn:()=>{ aiReset(); aiOpen(); }, s:"2 · AI ile Sipariş", c:"İstersen menü bile gezme — uygulama içi AI'a yaz (çekirdek pakette). Aynı motor WhatsApp'ta da çalışır — WhatsApp kanalı istenirse eklenen EK MODÜL."},
-    {fn:()=>{ const t=$("#aiText"); if(t){ t.value="2 latte biri yulaf sütlü, 1 cheesecake"; aiSend(); } }, s:"3 · AI Anladı ✨", c:"AI doğal dili çözdü; ürünleri (yulaf sütlü dahil) saniyede sepete ekledi. Tıklama derdi yok.", w:5600},
+    {fn:()=>{ const t=$("#aiText"); if(t){ t.value="2 latte biri yulaf sütlü, 1 cheesecake"; aiSend(); } }, s:"3 · AI Anladı ✨", c:"AI doğal dili çözdü; ürünleri (yulaf sütlü dahil) saniyede sepete ekledi. Tıklama derdi yok.", w:7800},
     {fn:()=>{ state.cart=[]; go("s-menu"); }, s:"4 · Menü", c:"Klasik menü de var: üstte '✨ AI'a yaz' girişi, arama, kategoriler ve 'En Sevilenler'. Sırada beklemeden seç."},
     {fn:()=>openSheet("karamelmac"), s:"5 · Özelleştirme", c:"Süt tercihi, ekstra shot... her kahve kişiye göre. Tezgahta 'nasıl olsun' muhabbeti yok."},
     {fn:()=>{ closeSheet(); quickAdd("karamelmac"); quickAdd("lotusmono"); }, s:"6 · Hızlı Ekleme", c:"Seçim saniyede sepete. 'Her Zamanki' ile düzenli müşteri tek tuşla sipariş verir."},
     {fn:()=>go("s-cart"), s:"7 · Sepet", c:"Ürünler, tutar ve kazanılacak sadakat puanı bir arada görünür."},
     {fn:()=>go("s-pay"), s:"8 · Ödeme", c:"Ödeme tamamen uygulamada: cüzdan, kayıtlı kart, Apple/Google Pay. Kasa YOK → sıra YOK."},
     {fn:()=>{ state.pay="wallet"; renderPay(); }, s:"9 · Ön Ödemeli Cüzdan", c:"Cüzdan: müşteri parayı önceden yükler (bonusla). Pablo'ya PEŞİN NAKİT + kilitlenme = stratejik silah."},
-    {fn:()=>pay(), s:"10 · Sipariş (+ Barista Cam opsiyonel)", c:"Ödeme alınınca sipariş anında mutfağa düşer; müşteri 'hazırlanıyor → hazır' akışını izler. Barista Cam ile canlı da izleyebilir — bu EK MODÜL, istenirse eklenir.", w:8500},
+    {fn:()=>pay(), s:"10 · Sipariş (+ Barista Cam opsiyonel)", c:"Ödeme alınınca sipariş anında mutfağa düşer; müşteri 'hazırlanıyor → hazır' akışını izler. Barista Cam ile canlı da izleyebilir — bu EK MODÜL, istenirse eklenir.", w:10000},
     {fn:()=>go("s-kds"), s:"11 · Barista Ekranı", c:"Sipariş barista ekranında belirir (✓Ödendi), hazırlanır, 'Hazır Rafı'na isimle konur. Barista para almaz, üretir."},
     {fn:()=>go("s-loy"), s:"12 · Sadakat + Cüzdan", c:"Mevcut Pablo Coffee Go damgaları korunur, üstüne cüzdan + seviye gelir. Yükle, bonus kahve kazan."},
     {fn:()=>go("s-loy"), s:"13 · Askıda Kahve", c:"Dijital askıda kahve: müşteri bir yabancıya kahve ısmarlar, sayaç canlı işler. Duygusal bağ + ücretsiz PR — Pablo köprü olur."},
     {fn:()=>go("s-biz"), s:"14 · İşletmeye Değeri", c:"Sahip ekranı: peşin yüklenen para, app cirosu, tekrar oranı, sıfır kasa kuyruğu. İşte ROI."},
-    {fn:()=>go("s-splash"), s:"✓ Özet", c:"Çekirdek paket: kasayı kaldıran, sırayı bitiren, peşin nakit getiren, AI ile kolaylaşan sistem — mevcut app'inizin ÜSTÜNE. İstenirse eklenir: WhatsApp sipariş & Barista Cam. BBAI."},
+    {fn:()=>go("s-splash"), s:"✓ Özet", c:"Çekirdek paket: kasayı kaldıran, sırayı bitiren, peşin nakit getiren, AI ile kolaylaşan sistem — mevcut app'inizin ÜSTÜNE. İstenirse eklenir: WhatsApp sipariş & Barista Cam. Final ürün Web, Android ve iOS için geliştirilecek. BBAI."},
   ];
   for(let i=0;i<steps.length;i++){
     if(demoStop) return;
     steps[i].fn && steps[i].fn();
     setCap(steps[i].s, steps[i].c, i, steps.length);
-    await demoSleep(steps[i].w||4800);
+    await demoSleep(steps[i].w||6800);
   }
   if(demoStop) return;
   $("#demoStep").textContent="✓ Demo bitti";
