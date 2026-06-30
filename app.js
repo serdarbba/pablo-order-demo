@@ -835,7 +835,7 @@ async function startDemo(){
     {fn:()=>{ closeSheet(); quickAdd("karamelmac"); quickAdd("lotusmono"); }, s:"6 · Hızlı Ekleme", c:"Seçim saniyede sepete. 'Her Zamanki' ile düzenli müşteri tek tuşla sipariş verir."},
     {fn:()=>go("s-cart"), s:"7 · Sepet", c:"Ürünler, tutar ve kazanılacak sadakat puanı bir arada görünür."},
     {fn:()=>go("s-pay"), s:"8 · Ödeme", c:"Ödeme tamamen uygulamada: cüzdan, kayıtlı kart, Apple/Google Pay. Kasa YOK → sıra YOK."},
-    {fn:()=>{ state.pay="wallet"; renderPay(); }, s:"9 · Ön Ödemeli Cüzdan", c:"Cüzdan: müşteri parayı önceden yükler (bonusla). Pablo'ya PEŞİN NAKİT + kilitlenme = stratejik silah."},
+    {fn:()=>{ state.pay="wallet"; renderPay(); }, s:"9 · Cüzdanı Çalıştırıyoruz", c:"Pablo Go cüzdanı zaten var — ama kasada ödemek için bekliyor. Biz onu sipariş+sıra-atlamaya bağlıyoruz: müşteri masasından cüzdanla tek dokunuşta öder. Mevcut bakiyeniz nihayet iş yapar."},
     {fn:()=>pay(), s:"10 · Sipariş (+ Barista Cam opsiyonel)", c:"Ödeme alınınca sipariş anında mutfağa düşer; müşteri 'hazırlanıyor → hazır' akışını izler. Barista Cam ile canlı da izleyebilir — bu EK MODÜL, istenirse eklenir.", w:10000},
     {fn:()=>go("s-kds"), s:"11 · Barista Ekranı", c:"Sipariş barista ekranında belirir (✓Ödendi), hazırlanır, 'Hazır Rafı'na isimle konur. Barista para almaz, üretir."},
     {fn:()=>go("s-loy"), s:"12 · Sadakat + Cüzdan", c:"Mevcut Pablo Coffee Go damgaları korunur, üstüne cüzdan + seviye gelir. Yükle, bonus kahve kazan."},
