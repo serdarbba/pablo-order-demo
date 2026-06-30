@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#1b1410" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<title>Pablo · Sırada Bekleme</title>
+<style>
+  :root{
+    --espresso:#1b1410;        /* koyu zemin */
+    --espresso-2:#241a14;
+    --crema:#f6efe4;           /* açık zemin */
+    --crema-2:#efe5d5;
+    --ink:#2a201a;             /* metin koyu */
+    --muted:#8c7d6e;           /* ikincil metin */
+    --amber:#c98a3f;           /* aksan / caramel */
+    --amber-deep:#a96f2c;
+    --green:#2f7d5b;           /* başarı / hazır */
+    --line:rgba(43,32,24,.10);
+    --card:#ffffff;
+    --shadow:0 10px 34px -16px rgba(27,20,16,.45);
+    --shadow-soft:0 4px 18px -10px rgba(27,20,16,.35);
+    --r:20px;
+    --safe-b:env(safe-area-inset-bottom,0px);
+    --safe-t:env(safe-area-inset-top,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:#0d0a08;color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none;
+  }
+  /* Telefon çerçevesi (masaüstünde demo görünümü) */
+  #frame{
+    max-width:430px;margin:0 auto;min-height:100%;position:relative;
+    background:var(--crema);overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  @media(min-width:520px){
+    body{background:radial-gradient(120% 120% at 50% 0%,#241a14 0%,#0d0a08 60%)}
+    #frame{margin:24px auto;min-height:calc(100vh - 48px);border-radius:38px;
+      box-shadow:0 40px 80px -30px rgba(0,0,0,.8),0 0 0 10px #000,0 0 0 11px #2a2018;overflow:hidden}
+  }
+  .screen{flex:1;display:none;flex-direction:column}
+  .screen.active{display:flex;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+
+  /* Üst bar */
+  .topbar{display:flex;align-items:center;gap:12px;padding:calc(var(--safe-t) + 14px) 18px 14px;}
+  .topbar.dark{color:var(--crema)}
+  .iconbtn{width:40px;height:40px;border-radius:50%;border:none;background:rgba(43,32,24,.06);
+    display:grid;place-items:center;cursor:pointer;font-size:18px;color:inherit;flex:none}
+  .topbar.dark .iconbtn{background:rgba(246,239,228,.10)}
+  .topbar h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px;flex:1;text-align:center}
+  .topbar .spacer{width:40px;flex:none}
+
+  .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .pad{padding:0 18px 24px}
+
+  /* Butonlar */
+  .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:none;
+    background:var(--espresso);color:var(--crema);font-size:16px;font-weight:700;
+    padding:17px;border-radius:16px;cursor:pointer;transition:transform .12s ease,opacity .2s;box-shadow:var(--shadow-soft)}
+  .btn:active{transform:scale(.98)}
+  .btn.amber{background:linear-gradient(135deg,var(--amber),var(--amber-deep));color:#fff}
+  .btn.ghost{background:transparent;color:var(--ink);box-shadow:none;border:1.5px solid var(--line)}
+  .btn:disabled{opacity:.4;pointer-events:none}
+
+  .brandmark{font-weight:800;letter-spacing:3px;font-size:22px}
+  .brandmark small{display:block;font-weight:500;letter-spacing:5px;font-size:9px;color:var(--muted);margin-top:3px}
+
+  /* ===== SPLASH / QR ===== */
+  #s-splash{background:linear-gradient(165deg,#241a14 0%,#160f0b 100%);color:var(--crema);justify-content:space-between}
+  .splash-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+  .qr-card{background:#fff;border-radius:24px;padding:18px;box-shadow:0 20px 50px -20px rgba(0,0,0,.6);animation:pop .5s ease both}
+  .qr-card svg{display:block;border-radius:8px}
+  .splash-top .logo{margin-bottom:34px}
+  .splash-top .logo .brandmark{font-size:30px;color:#fff}
+  .splash-loc{margin-top:20px;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:30px;
+    background:rgba(246,239,228,.08);border:1px solid rgba(246,239,228,.12);font-size:13.5px;color:var(--crema);font-weight:600}
+  .splash-loc .dot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+  .splash-hint{margin-top:18px;color:rgba(246,239,228,.7);font-size:14px;max-width:240px;line-height:1.5}
+  .splash-bottom{padding:0 22px calc(var(--safe-b) + 26px)}
+  .splash-bottom .tagline{text-align:center;font-size:13px;color:rgba(246,239,228,.55);margin-top:16px}
+  .scan-line{position:relative;overflow:hidden}
+
+  /* ===== Şube ===== */
+  .branch{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:16px;padding:14px;
+    margin-bottom:12px;cursor:pointer;box-shadow:var(--shadow-soft);border:1.5px solid transparent;transition:.15s}
+  .branch:active{transform:scale(.99)}
+  .branch.sel{border-color:var(--amber)}
+  .branch .pin{width:46px;height:46px;border-radius:13px;background:var(--crema-2);display:grid;place-items:center;font-size:20px;flex:none}
+  .branch .info{flex:1;min-width:0}
+  .branch .info b{font-size:15px;display:block}
+  .branch .info span{font-size:12.5px;color:var(--muted)}
+  .badge-open{font-size:11px;color:var(--green);font-weight:700}
+
+  /* ===== Menü ===== */
+  .hero{padding:4px 18px 18px}
+  .hero h2{font-size:26px;margin:2px 0 4px;letter-spacing:-.3px}
+  .hero p{margin:0;color:var(--muted);font-size:13.5px}
+  .cats{display:flex;gap:9px;overflow-x:auto;padding:2px 18px 12px;-webkit-overflow-scrolling:touch}
+  .cats::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:9px 16px;border-radius:30px;background:#fff;border:1.5px solid var(--line);
+    font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap;transition:.15s}
+  .chip.on{background:var(--espresso);color:var(--crema);border-color:var(--espresso)}
+  .cat-title{font-size:13px;font-weight:800;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin:18px 2px 12px}
+  .item{display:flex;gap:14px;background:var(--card);border-radius:18px;padding:12px;margin-bottom:12px;
+    box-shadow:var(--shadow-soft);cursor:pointer;transition:transform .12s}
+  .item:active{transform:scale(.99)}
+  .item .thumb{width:78px;height:78px;border-radius:14px;flex:none;display:grid;place-items:center;font-size:34px;
+    background:radial-gradient(120% 120% at 30% 20%,#f0e2cd,#e6d3b5)}
+  .item .body{flex:1;min-width:0;display:flex;flex-direction:column}
+  .item .body b{font-size:15px}
+  .item .body p{margin:3px 0 0;font-size:12.5px;color:var(--muted);line-height:1.4;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .item .row{margin-top:auto;display:flex;align-items:center;justify-content:space-between;padding-top:8px}
+  .price{font-weight:800;font-size:15px}
+  .addbtn{width:34px;height:34px;border-radius:11px;border:none;background:var(--espresso);color:#fff;font-size:20px;
+    display:grid;place-items:center;cursor:pointer;line-height:1}
+  .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.5px;padding:3px 7px;border-radius:6px;
+    background:rgba(201,138,63,.15);color:var(--amber-deep);margin-bottom:4px}
+
+  /* Menü başlık bloğu (hero+arama+tablar sabit kalır) */
+  .menu-head{background:var(--crema);border-bottom:1px solid var(--line);box-shadow:0 6px 14px -12px rgba(27,20,16,.4);z-index:6}
+  .hero{padding:2px 18px 12px}
+  /* Arama */
+  .search{margin:0 18px 12px;display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid var(--line);
+    border-radius:14px;padding:0 12px;height:46px;box-shadow:var(--shadow-soft);transition:border-color .15s}
+  .search:focus-within{border-color:var(--amber)}
+  .search .si{font-size:19px;color:var(--muted)}
+  .search input{flex:1;border:none;outline:none;background:none;font-size:15px;color:var(--ink);height:100%}
+  .search input::placeholder{color:var(--muted)}
+  .sclear{border:none;background:var(--crema-2);width:24px;height:24px;border-radius:50%;color:var(--muted);font-size:12px;cursor:pointer;flex:none}
+
+  /* En Sevilenler vitrini */
+  .fav-wrap{margin:14px 0 6px;animation:fade .4s ease both}
+  .fav-h{display:flex;align-items:center;gap:7px;padding:0 2px 11px;font-size:14px;font-weight:800;letter-spacing:.2px}
+  .fav-rail{display:flex;gap:13px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x mandatory}
+  .fav-rail::-webkit-scrollbar{display:none}
+  .fav-card{flex:none;width:160px;scroll-snap-align:start;background:var(--card);border-radius:18px;overflow:hidden;
+    box-shadow:var(--shadow-soft);cursor:pointer;transition:transform .12s}
+  .fav-card:active{transform:scale(.98)}
+  .fav-card .ph{height:96px;display:grid;place-items:center;font-size:46px;background:radial-gradient(120% 120% at 30% 20%,#f0e2cd,#e6d3b5);position:relative}
+  .fav-card .ph .tag{position:absolute;top:8px;left:8px;margin:0}
+  .fav-card .meta{padding:11px 12px 13px}
+  .fav-card .meta b{font-size:13.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fav-card .meta .pr{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+  .fav-card .meta .pr .price{font-size:14px}
+  .fav-card .addbtn{width:30px;height:30px;border-radius:9px;font-size:18px}
+
+  /* Akordeon kategoriler */
+  .acc{border-bottom:1px solid var(--line);margin-bottom:4px}
+  .acc:last-child{border-bottom:none}
+  .acc-head{width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;cursor:pointer;
+    padding:18px 2px 14px;font:inherit;color:var(--ink)}
+  .acc-emo{width:34px;height:34px;border-radius:10px;background:var(--crema-2);display:grid;place-items:center;font-size:18px;flex:none}
+  .acc-name{font-size:16px;font-weight:800;letter-spacing:-.2px;flex:1;text-align:left}
+  .acc-count{font-size:12px;font-weight:700;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:20px;padding:3px 9px}
+  .chev{font-size:13px;color:var(--muted);transition:transform .3s ease;margin-left:4px}
+  .acc.open .chev{transform:rotate(180deg)}
+  .acc-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .34s cubic-bezier(.3,.8,.3,1),opacity .3s;opacity:.5}
+  .acc.open .acc-body{grid-template-rows:1fr;opacity:1}
+  .acc-inner{overflow:hidden;min-height:0}
+  .acc-inner .item:first-child{margin-top:2px}
+  mark{background:rgba(201,138,63,.32);color:inherit;border-radius:3px;padding:0 1px}
+
+  /* Alt sepet barı */
+  .cartbar{position:sticky;bottom:0;padding:12px 18px calc(var(--safe-b) + 14px);
+    background:linear-gradient(transparent,var(--crema) 22%)}
+  .cartbar .btn{position:relative}
+  .cartbar .count{position:absolute;left:16px;background:rgba(255,255,255,.22);min-width:26px;height:26px;border-radius:9px;
+    display:grid;place-items:center;font-size:13px;padding:0 7px}
+
+  /* Ürün sayfası (sheet) */
+  .sheet-wrap{position:fixed;inset:0;z-index:60;display:none}
+  .sheet-wrap.show{display:block}
+  .sheet-bg{position:absolute;inset:0;background:rgba(13,10,8,.5);animation:fade .25s ease both}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;background:var(--crema);
+    border-radius:26px 26px 0 0;padding:8px 20px calc(var(--safe-b) + 20px);max-height:92%;overflow-y:auto;
+    animation:slideup .3s cubic-bezier(.2,.8,.2,1) both}
+  @media(min-width:520px){.sheet{border-radius:26px 26px 38px 38px;bottom:24px;max-height:80%}}
+  @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+  .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 14px}
+  .sheet .big{width:100%;height:150px;border-radius:20px;display:grid;place-items:center;font-size:70px;
+    background:radial-gradient(120% 120% at 30% 20%,#f0e2cd,#e6d3b5);margin-bottom:16px}
+  .sheet h3{margin:0 0 6px;font-size:22px}
+  .sheet .desc{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 18px}
+  .opt-title{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:16px 0 10px}
+  .opts{display:flex;gap:9px;flex-wrap:wrap}
+  .opt{padding:11px 16px;border-radius:13px;background:#fff;border:1.5px solid var(--line);font-size:14px;
+    font-weight:600;cursor:pointer;transition:.15s}
+  .opt.on{border-color:var(--amber);background:rgba(201,138,63,.10);color:var(--amber-deep)}
+  .qtyrow{display:flex;align-items:center;gap:18px;margin:22px 0 6px;justify-content:center}
+  .qtyrow button{width:44px;height:44px;border-radius:14px;border:1.5px solid var(--line);background:#fff;font-size:22px;cursor:pointer}
+  .qtyrow b{font-size:20px;min-width:24px;text-align:center}
+
+  /* ===== Sepet ===== */
+  .cart-line{display:flex;gap:12px;background:var(--card);border-radius:16px;padding:12px;margin-bottom:11px;box-shadow:var(--shadow-soft)}
+  .cart-line .ic{width:52px;height:52px;border-radius:12px;display:grid;place-items:center;font-size:26px;flex:none;
+    background:radial-gradient(120% 120% at 30% 20%,#f0e2cd,#e6d3b5)}
+  .cart-line .m{flex:1;min-width:0}
+  .cart-line .m b{font-size:14.5px}
+  .cart-line .m span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  .stepper{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .stepper button{width:28px;height:28px;border-radius:9px;border:1.5px solid var(--line);background:#fff;font-size:16px;cursor:pointer;line-height:1}
+  .summary{background:var(--card);border-radius:16px;padding:16px;box-shadow:var(--shadow-soft);margin-top:6px}
+  .summary .l{display:flex;justify-content:space-between;font-size:14px;margin-bottom:9px;color:var(--muted)}
+  .summary .l.tot{color:var(--ink);font-weight:800;font-size:18px;margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+  .pickup{display:flex;gap:10px;margin:14px 0 4px}
+  .pickup .opt{flex:1;text-align:center;padding:14px 8px}
+  .pickup .opt small{display:block;color:var(--muted);font-weight:500;margin-top:3px;font-size:11px}
+
+  /* ===== Ödeme ===== */
+  .pay-method{display:flex;align-items:center;gap:13px;background:var(--card);border-radius:15px;padding:15px;
+    margin-bottom:11px;box-shadow:var(--shadow-soft);border:1.5px solid transparent;cursor:pointer}
+  .pay-method.sel{border-color:var(--espresso)}
+  .pay-method .pic{width:44px;height:30px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;flex:none}
+  .pay-method b{flex:1;font-size:14.5px}
+  .radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none}
+  .pay-method.sel .radio{border-color:var(--espresso);background:radial-gradient(circle,var(--espresso) 42%,transparent 46%)}
+  .pm-txt{flex:1;min-width:0}
+  .pm-txt b{font-size:14.5px;display:flex;align-items:center;gap:7px}
+  .pm-txt span{font-size:12px;color:var(--muted);display:block;margin-top:2px}
+  .pm-badge{font-size:9px;font-weight:800;color:#fff;padding:2px 6px;border-radius:5px;letter-spacing:.3px;flex:none}
+  .pm-badge.fast{background:var(--green)} .pm-badge.nfc{background:var(--amber)}
+  .pay-warn{background:rgba(201,138,63,.12);border:1px solid rgba(201,138,63,.3);border-radius:12px;padding:11px 13px;
+    margin-top:4px;font-size:12.5px;color:var(--amber-deep);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pay-warn button{border:none;background:var(--amber);color:#fff;font-weight:700;font-size:12px;padding:6px 11px;border-radius:9px;cursor:pointer}
+  .kds-pay{font-size:10px;font-weight:800;padding:3px 7px;border-radius:6px;margin-left:auto}
+  .kds-pay.paid{background:rgba(47,125,91,.15);color:var(--green)}
+  .kds-pay.exp{background:rgba(201,138,63,.15);color:var(--amber-deep)}
+
+  /* ===== Sipariş durumu ===== */
+  #s-status{background:linear-gradient(170deg,#241a14,#160f0b);color:var(--crema)}
+  .status-head{text-align:center;padding:30px 24px 10px}
+  .order-num{font-size:13px;letter-spacing:3px;color:rgba(246,239,228,.6);text-transform:uppercase}
+  .order-big{font-size:60px;font-weight:800;letter-spacing:2px;margin:6px 0}
+  .order-name{font-size:15px;color:rgba(246,239,228,.8);font-weight:600;margin:-2px 0 2px}
+  .namebox{display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid var(--line);border-radius:14px;
+    padding:0 12px;height:48px;box-shadow:var(--shadow-soft);transition:border-color .15s;margin-bottom:4px}
+  .namebox:focus-within{border-color:var(--amber)}
+  .namebox .ni{font-size:18px}
+  .namebox input{flex:1;border:none;outline:none;background:none;font-size:15.5px;color:var(--ink);height:100%}
+  .namebox input::placeholder{color:var(--muted)}
+  .ring{width:150px;height:150px;margin:14px auto 6px;position:relative;display:grid;place-items:center}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .emoji{position:absolute;font-size:52px}
+  .steps{padding:18px 26px}
+  .step{display:flex;align-items:center;gap:14px;padding:13px 0;opacity:.4;transition:opacity .4s}
+  .step.on{opacity:1}
+  .step .dot{width:30px;height:30px;border-radius:50%;background:rgba(246,239,228,.15);display:grid;place-items:center;font-size:14px;flex:none}
+  .step.done .dot{background:var(--green)}
+  .step.on .dot{background:var(--amber)}
+  .step b{font-size:15px;display:block}
+  .step span{font-size:12px;color:rgba(246,239,228,.55)}
+  .eta{text-align:center;font-size:14px;color:rgba(246,239,228,.65);margin:4px 0 8px}
+  .status-pay{text-align:center;font-size:12.5px;color:rgba(246,239,228,.7);margin:2px 0 4px}
+  .status-pay.exp{color:#e7b277}
+
+  /* Bildirim toast */
+  .toast{position:fixed;top:calc(var(--safe-t) + 14px);left:50%;transform:translateX(-50%) translateY(-160%);
+    width:calc(100% - 28px);max-width:402px;z-index:90;background:rgba(28,21,16,.92);backdrop-filter:blur(14px);
+    color:var(--crema);border-radius:18px;padding:13px 15px;display:flex;gap:12px;align-items:center;
+    box-shadow:0 18px 40px -16px rgba(0,0,0,.7);transition:transform .5s cubic-bezier(.2,.9,.2,1)}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast .ic{width:38px;height:38px;border-radius:10px;background:var(--amber);display:grid;place-items:center;font-size:20px;flex:none}
+  .toast b{font-size:14px;display:block}
+  .toast span{font-size:12.5px;color:rgba(246,239,228,.7)}
+
+  /* ===== Sadakat ===== */
+  .loy-card{background:linear-gradient(135deg,#2a1f17,#1a120d);color:var(--crema);border-radius:22px;padding:22px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .loy-card::after{content:"☕";position:absolute;right:-14px;bottom:-22px;font-size:120px;opacity:.06}
+  .loy-card .lt{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:rgba(246,239,228,.55)}
+  .loy-card h3{margin:6px 0 2px;font-size:21px}
+  .loy-card .sub{font-size:13px;color:rgba(246,239,228,.7)}
+  .stamps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+  .stamp{aspect-ratio:1;border-radius:50%;border:1.5px dashed rgba(246,239,228,.3);display:grid;place-items:center;font-size:20px;color:rgba(246,239,228,.3)}
+  .stamp.full{border-style:solid;border-color:var(--amber);background:rgba(201,138,63,.18);color:var(--amber)}
+  .stamp.reward{border-color:var(--green);background:rgba(47,125,91,.2);color:#8fe3bd}
+  .pts{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+  .pts b{font-size:34px;letter-spacing:-1px}
+  .pts span{color:rgba(246,239,228,.6);font-size:13px}
+  .perk{display:flex;gap:13px;align-items:center;background:var(--card);border-radius:15px;padding:14px;margin-bottom:11px;box-shadow:var(--shadow-soft)}
+  .perk .ic{width:42px;height:42px;border-radius:12px;background:var(--crema-2);display:grid;place-items:center;font-size:20px;flex:none}
+  .perk b{font-size:14px;display:block}.perk span{font-size:12px;color:var(--muted)}
+  .integ{display:block;background:rgba(47,125,91,.10);border:1px solid rgba(47,125,91,.25);
+    border-radius:13px;padding:12px 14px;margin-top:14px;font-size:12.5px;color:#246148;line-height:1.5}
+  .integ b{color:#1c4e3a}
+
+  /* Alt navigasyon */
+  .tabbar{display:flex;background:#fff;border-top:1px solid var(--line);padding:8px 8px calc(var(--safe-b) + 8px)}
+  .tab{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-size:10.5px;color:var(--muted);cursor:pointer;padding:6px;font-weight:600}
+  .tab .ti{font-size:20px}
+  .tab.on{color:var(--espresso)}
+
+  .center-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted);padding:40px;gap:8px}
+  .center-empty .e{font-size:54px}
+  .wm{text-align:center;font-size:10.5px;color:var(--muted);letter-spacing:.4px;padding:10px 0 calc(var(--safe-b) + 6px)}
+  .wm b{color:var(--amber-deep);font-weight:700}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:80}
+
+  /* İşletme özeti */
+  .biz-hero{background:linear-gradient(135deg,#2f7d5b,#1c4e3a);color:#fff;border-radius:20px;padding:20px;margin-top:14px;box-shadow:var(--shadow)}
+  .bh-lbl{font-size:11px;letter-spacing:1px;color:rgba(255,255,255,.7);font-weight:700}
+  .bh-val{font-size:40px;font-weight:800;letter-spacing:-1px;margin:6px 0 8px}
+  .bh-sub{font-size:13px;color:rgba(255,255,255,.85);line-height:1.5}
+  .biz-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px}
+  .biz-m{background:#fff;border-radius:15px;padding:14px;box-shadow:var(--shadow-soft)}
+  .biz-m span{font-size:11.5px;color:var(--muted);display:block}
+  .biz-m b{font-size:22px;font-weight:800;display:block;margin-top:5px}
+  .biz-why{background:#fff;border-radius:16px;padding:16px;margin-top:14px;box-shadow:var(--shadow-soft)}
+  .biz-why-t{font-size:14px;font-weight:800;margin-bottom:12px}
+  .biz-why-i{font-size:13px;color:var(--ink);line-height:1.5;margin-bottom:9px}
+  .biz-why-i b{color:var(--amber-deep)}
+
+  /* Otomatik demo caption barı */
+  .demo-bar{position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;z-index:95;
+    transform:translateY(120%);transition:transform .4s cubic-bezier(.2,.9,.2,1)}
+  .demo-bar.show{transform:none}
+  @media(min-width:520px) and (max-width:979px){.demo-bar{bottom:24px}}
+  /* Geniş ekran: barı telefonun SAĞINDAKİ boş alana al — telefonu kapatmaz */
+  @media(min-width:980px){
+    .demo-bar{left:calc(50% + 235px);right:24px;bottom:auto;top:50%;max-width:none;margin:0;
+      transform:translateY(-50%) translateX(16px);opacity:0;
+      transition:opacity .35s ease, transform .35s ease}
+    .demo-bar.show{transform:translateY(-50%) translateX(0);opacity:1}
+    .demo-inner{margin:0}
+    .demo-cap{font-size:15px}
+  }
+  /* Çok geniş ekran: sol tarafı da kullan (daha ferah) */
+  @media(min-width:1240px){
+    .demo-bar{left:calc(50% + 250px);right:max(24px, calc(50% - 540px))}
+  }
+  .demo-inner{background:rgba(20,13,9,.94);backdrop-filter:blur(14px);color:var(--crema);margin:0 12px 12px;
+    border-radius:18px;padding:14px 16px;box-shadow:0 18px 44px -16px rgba(0,0,0,.7)}
+  .demo-step{font-size:10.5px;letter-spacing:1px;color:var(--amber);font-weight:800;text-transform:uppercase}
+  .demo-cap{font-size:14px;line-height:1.5;margin-top:5px}
+  .demo-ctrl{display:flex;align-items:center;gap:10px;margin-top:11px}
+  .demo-dots{display:flex;gap:5px;flex:1}
+  .demo-dot{width:7px;height:7px;border-radius:50%;background:rgba(246,239,228,.25)}
+  .demo-dot.on{background:var(--amber)}
+  .demo-ctrl button{border:none;background:rgba(246,239,228,.14);color:var(--crema);font-weight:700;font-size:12.5px;
+    padding:8px 14px;border-radius:10px;cursor:pointer}
+  .demo-replay{background:var(--amber)!important;color:#fff!important}
+
+  /* AI — doğal dil sipariş + öneri (BBAI) */
+  .ai-order{display:flex;align-items:center;gap:11px;margin:14px 0 4px;padding:13px 14px;border-radius:16px;cursor:pointer;
+    background:linear-gradient(135deg,#2b2142,#191227);color:var(--crema);box-shadow:var(--shadow);border:1px solid rgba(201,138,63,.28)}
+  .ai-order .ai-ic{width:40px;height:40px;border-radius:12px;background:rgba(201,138,63,.22);display:grid;place-items:center;font-size:20px;flex:none}
+  .ai-order .ao-b{flex:1;min-width:0}
+  .ai-order .ao-b b{font-size:14px;display:block}
+  .ai-order .ao-b span{font-size:11.5px;color:rgba(246,239,228,.62)}
+  .ai-tag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.6px;color:#e0bd86;background:rgba(201,138,63,.18);padding:3px 7px;border-radius:5px}
+  /* AI sohbet sayfası */
+  #s-ai{background:linear-gradient(170deg,#241a2e,#160f1e);color:var(--crema)}
+  .ai-chat{flex:1;overflow-y:auto;padding:8px 16px 16px;display:flex;flex-direction:column;gap:10px}
+  .bub{max-width:84%;padding:12px 14px;border-radius:16px;font-size:14px;line-height:1.5;animation:fade .3s ease}
+  .bub.ai{align-self:flex-start;background:rgba(246,239,228,.10)}
+  .bub.me{align-self:flex-end;background:linear-gradient(135deg,var(--amber),var(--amber-deep));color:#fff}
+  .bub .mini{display:block;font-size:11px;color:rgba(246,239,228,.6);margin-top:6px}
+  .ai-chips{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 8px}
+  .ai-chip{font-size:12.5px;padding:8px 12px;border-radius:20px;background:rgba(246,239,228,.10);color:var(--crema);border:1px solid rgba(246,239,228,.14);cursor:pointer}
+  .ai-input{display:flex;gap:9px;padding:10px 14px calc(var(--safe-b) + 12px);background:rgba(0,0,0,.2)}
+  .ai-input input{flex:1;border:none;outline:none;border-radius:14px;padding:13px 15px;font-size:15px;background:rgba(246,239,228,.12);color:var(--crema)}
+  .ai-input input::placeholder{color:rgba(246,239,228,.5)}
+  .ai-input button{border:none;background:var(--amber);color:#fff;font-weight:800;border-radius:14px;padding:0 18px;cursor:pointer;font-size:15px}
+  .ai-added{background:rgba(47,125,91,.18);border:1px solid rgba(47,125,91,.4)}
+  .ai-added .mini{color:#9fe3c2}
+  /* AI öneri kartı (menü) */
+  .ai-card{display:flex;gap:13px;align-items:center;margin:14px 0 4px;padding:15px;border-radius:18px;cursor:pointer;
+    background:linear-gradient(135deg,#2b2142,#191227);color:var(--crema);box-shadow:var(--shadow);border:1px solid rgba(201,138,63,.28)}
+  .ai-card .ai-ic{width:44px;height:44px;border-radius:13px;background:rgba(201,138,63,.22);display:grid;place-items:center;font-size:22px;flex:none}
+  .ai-card .ai-body{flex:1;min-width:0}
+  .ai-card .ai-t{font-size:14.5px;font-weight:800}
+  .ai-card .ai-r{font-size:12px;color:rgba(246,239,228,.72);margin-top:2px;line-height:1.4}
+  .ai-card .ai-add{border:none;background:var(--amber);color:#fff;font-weight:800;font-size:12px;padding:9px 12px;border-radius:11px;cursor:pointer;flex:none}
+  /* Sepet AI upsell */
+  .ai-up{display:flex;gap:12px;align-items:center;background:#fff;border:1.5px dashed rgba(201,138,63,.55);border-radius:16px;padding:12px;margin-bottom:12px}
+  .ai-up .ai-ic{width:40px;height:40px;border-radius:12px;background:rgba(201,138,63,.14);display:grid;place-items:center;font-size:20px;flex:none}
+  .ai-up .u-b{flex:1;min-width:0}.ai-up .u-b .ai-tag{color:var(--amber-deep);background:rgba(201,138,63,.14)}
+  .ai-up .u-b b{font-size:13.5px;display:block;margin-top:3px}.ai-up .u-b span{font-size:11.5px;color:var(--muted)}
+  .ai-up button{border:none;background:var(--espresso);color:var(--crema);font-weight:700;font-size:12px;padding:9px 12px;border-radius:10px;cursor:pointer;flex:none}
+  /* İşletme AI öngörü */
+  .ai-insight{background:linear-gradient(135deg,#2b2142,#191227);color:var(--crema);border-radius:16px;padding:16px;margin-top:14px;border:1px solid rgba(201,138,63,.28)}
+  .ai-insight b{font-size:14px;display:block;margin-top:8px}
+  .ai-insight p{margin:6px 0 0;font-size:13px;color:rgba(246,239,228,.8);line-height:1.5}
+
+  /* Her Zamanki barı */
+  .usual{display:flex;align-items:center;gap:13px;margin:14px 0 4px;padding:14px;border-radius:18px;cursor:pointer;
+    background:linear-gradient(135deg,#2a1f17,#1a120d);color:var(--crema);box-shadow:var(--shadow);transition:transform .12s}
+  .usual:active{transform:scale(.99)}
+  .usual .u-ic{width:42px;height:42px;border-radius:12px;background:rgba(201,138,63,.22);color:var(--amber);
+    display:grid;place-items:center;font-size:22px;flex:none}
+  .usual .u-body{flex:1;min-width:0}
+  .usual .u-t{font-size:14.5px;font-weight:800}
+  .usual .u-s{font-size:12px;color:rgba(246,239,228,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .usual .u-act{text-align:right;flex:none}
+  .usual .u-pr{font-size:13px;font-weight:800;margin-bottom:5px}
+  .usual .u-add{border:none;background:var(--amber);color:#fff;font-weight:700;font-size:11.5px;padding:6px 10px;border-radius:9px;cursor:pointer}
+
+  /* Cüzdan & seviye */
+  .wallet{background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--shadow-soft);margin-top:6px}
+  .wallet .w-top{display:flex;align-items:flex-start;justify-content:space-between}
+  .wallet .w-lbl{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .wallet .w-bal{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-top:2px}
+  .tier-badge{background:linear-gradient(135deg,#c98a3f,#a96f2c);color:#fff;font-size:12.5px;font-weight:800;
+    padding:7px 12px;border-radius:30px}
+  .wallet .w-prog{height:8px;border-radius:5px;background:var(--crema-2);margin:14px 0 7px;overflow:hidden}
+  .wallet .w-bar{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--amber),var(--amber-deep));transition:width .5s}
+  .wallet .w-next{font-size:12.5px;color:var(--muted)}.wallet .w-next b{color:var(--amber-deep)}
+  .wallet .w-bonus{font-size:12px;color:var(--amber-deep);background:rgba(201,138,63,.10);border-radius:11px;
+    padding:9px 11px;margin-top:13px;line-height:1.45}
+  .wallet .w-btns{display:flex;gap:9px;margin-top:10px}
+  .wallet .w-load{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px;font-weight:800;
+    font-size:14px;cursor:pointer;color:var(--ink);transition:.15s;text-align:center}
+  .wallet .w-load:active{background:var(--crema-2)}
+  .wallet .w-load small{display:block;color:var(--green);font-size:10px;margin-top:2px;font-weight:800}
+
+  /* Personel link */
+  .stafflink{text-align:center;margin-top:18px;font-size:11.5px;color:rgba(246,239,228,.35);cursor:pointer;letter-spacing:.3px}
+  .stafflink:active{color:rgba(246,239,228,.6)}
+
+  /* KDS / Barista ekranı */
+  .kds-stats{display:flex;background:#160f0b;color:var(--crema);padding:0 18px 14px;gap:18px}
+  .kds-stats span{font-size:12px;color:rgba(246,239,228,.6)}.kds-stats b{color:var(--amber);font-size:15px;margin-right:3px}
+  .kds-card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow-soft);border-left:5px solid var(--muted)}
+  .kds-card.new{border-left-color:#c98a3f}
+  .kds-card.prep{border-left-color:#3a7bd5}
+  .kds-card.ready{border-left-color:var(--green)}
+  .kds-h{display:flex;align-items:center;gap:10px}
+  .kds-no{font-size:18px;font-weight:800}
+  .kds-name{flex:1;font-size:14px;color:var(--ink);font-weight:600}
+  .kds-sub{margin-top:3px}
+  .kds-min{font-size:12px;color:var(--muted)}
+  .kds-items{margin:9px 0 12px;font-size:13.5px;color:var(--ink);line-height:1.5}
+  .kds-foot{display:flex;align-items:center;justify-content:space-between}
+  .kds-pill{font-size:10.5px;font-weight:800;letter-spacing:.5px;padding:4px 9px;border-radius:7px}
+  .kds-pill.new{background:rgba(201,138,63,.15);color:var(--amber-deep)}
+  .kds-pill.prep{background:rgba(58,123,213,.15);color:#2c5fa8}
+  .kds-pill.ready{background:rgba(47,125,91,.18);color:var(--green)}
+  .kds-btn{border:none;background:var(--espresso);color:var(--crema);font-weight:700;font-size:13px;padding:10px 14px;border-radius:11px;cursor:pointer}
+  .kds-card.ready .kds-btn{background:var(--green)}
+
+  /* Geçmiş siparişler */
+  .perk.tap{cursor:pointer}.perk .perk-go{margin-left:auto;color:var(--muted);font-size:20px}
+  .gate{display:flex;flex-direction:column;align-items:center;text-align:center;padding:48px 26px;gap:6px}
+  .gate-ic{width:74px;height:74px;border-radius:50%;background:var(--crema-2);display:grid;place-items:center;font-size:34px;margin-bottom:8px}
+  .gate h3{margin:6px 0 2px;font-size:21px}
+  .gate p{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 20px;max-width:300px}
+  .hist-card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow-soft)}
+  .hist-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px}
+  .hist-no{font-size:15px;font-weight:800}
+  .hist-date{font-size:12px;color:var(--muted)}
+  .hist-items{font-size:13.5px;color:var(--ink);line-height:1.5}
+  .hist-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .hist-tot{font-weight:800;font-size:15px}
+  .hist-re{border:1.5px solid var(--line);background:#fff;color:var(--ink);font-weight:700;font-size:12.5px;padding:8px 13px;border-radius:11px;cursor:pointer}
+  .hist-re:active{background:var(--crema-2)}
+
+  /* ===== Canlı yoğunluk göstergesi ===== */
+  .busy{margin-top:14px;display:inline-flex;align-items:center;gap:11px;padding:10px 15px;border-radius:16px;
+    background:rgba(246,239,228,.06);border:1px solid rgba(246,239,228,.12)}
+  .busy .blive{width:8px;height:8px;border-radius:50%;background:var(--bz,#2f7d5b);position:relative;flex:none}
+  .busy .blive::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--bz,#2f7d5b);opacity:.5;animation:bpulse 1.8s ease-out infinite}
+  @keyframes bpulse{0%{transform:scale(.6);opacity:.6}100%{transform:scale(1.9);opacity:0}}
+  .busy .btxt{font-size:13px;color:var(--crema);line-height:1.35;text-align:left}
+  .busy .btxt b{color:var(--bz,#2f7d5b);font-weight:800}
+  .busy .btxt small{display:block;color:rgba(246,239,228,.55);font-size:11px;margin-top:1px}
+  .busy .bbars{display:flex;align-items:flex-end;gap:3px;height:18px;margin-left:2px;flex:none}
+  .busy .bbars i{width:5px;border-radius:2px;background:rgba(246,239,228,.16)}
+  .busy .bbars i:nth-child(1){height:7px} .busy .bbars i:nth-child(2){height:12px} .busy .bbars i:nth-child(3){height:18px}
+  .busy .bbars i.on{background:var(--bz,#2f7d5b)}
+  .branch .bbars i{background:var(--crema-2)} .branch .bbars i.on{background:var(--bz,#2f7d5b)}
+  /* şube satırındaki canlı rozet */
+  .blive-sm{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;margin-top:3px}
+  .blive-sm .d{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.4s infinite}
+
+  /* splash askıda çipi */
+  .ask-chip{margin-top:12px;display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:30px;cursor:pointer;
+    background:rgba(201,138,63,.12);border:1px solid rgba(201,138,63,.28);font-size:12.5px;color:var(--crema);font-weight:600;transition:.15s}
+  .ask-chip:active{transform:scale(.98)}
+  .ask-chip b{color:var(--amber)}
+
+  /* ===== Barista cam (canlı izleme) ===== */
+  .bcam{margin:2px 18px 0;border-radius:18px;overflow:hidden;background:#0b0807;
+    border:1px solid rgba(246,239,228,.10);box-shadow:var(--shadow);animation:fade .4s ease both}
+  .bcam-top{display:flex;align-items:center;gap:8px;padding:10px 13px;background:rgba(0,0,0,.4)}
+  .bcam-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.6px;color:#ff5a4d}
+  .bcam-live .rec{width:8px;height:8px;border-radius:50%;background:#ff5a4d;animation:blink 1.1s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .bcam-top .who{font-size:11px;color:rgba(246,239,228,.55);margin-left:auto;font-weight:600}
+  .bcam-stage{height:172px;position:relative;display:grid;place-items:center;overflow:hidden;
+    background:radial-gradient(120% 95% at 50% 14%,#43301f 0%,#160f0a 72%)}
+  .bcam-scene{position:relative;display:flex;align-items:flex-end;gap:6px;font-size:58px;line-height:1;filter:drop-shadow(0 10px 16px rgba(0,0,0,.5))}
+  .bcam-scene .machine{font-size:46px;transform:translateY(2px)}
+  .bcam-scene .barista{font-size:50px}
+  .bcam-cup{position:relative}
+  .bcam-cup .steam{position:absolute;left:0;right:0;top:-20px;display:flex;justify-content:center;gap:7px;pointer-events:none}
+  .bcam-cup .steam i{width:5px;height:20px;border-radius:4px;background:rgba(246,239,228,.5);filter:blur(2px);
+    opacity:0;animation:steam 2.4s ease-in infinite}
+  .bcam-cup .steam i:nth-child(2){animation-delay:.5s} .bcam-cup .steam i:nth-child(3){animation-delay:1s}
+  @keyframes steam{0%{opacity:0;transform:translateY(6px) scaleY(.6)}35%{opacity:.55}100%{opacity:0;transform:translateY(-22px) scaleY(1.3)}}
+  .bcam-scan{position:absolute;left:0;right:0;height:46px;background:linear-gradient(transparent,rgba(201,138,63,.16),transparent);animation:scan 3.2s linear infinite}
+  @keyframes scan{0%{top:-46px}100%{top:172px}}
+  .bcam-stage::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 4px)}
+  .bcam-badge{position:absolute;top:10px;left:11px;font-size:10.5px;font-weight:800;letter-spacing:.4px;color:rgba(246,239,228,.7);
+    background:rgba(0,0,0,.4);padding:4px 9px;border-radius:8px}
+  .bcam-cap{padding:11px 13px;font-size:12.5px;color:rgba(246,239,228,.78);display:flex;align-items:center;gap:9px;background:rgba(0,0,0,.28)}
+  .bcam-cap .cdot{width:7px;height:7px;border-radius:50%;background:var(--amber);flex:none;animation:blink 1.3s infinite}
+  .bcam.done .bcam-stage{background:radial-gradient(120% 95% at 50% 14%,#1c4e3a 0%,#11140f 72%)}
+  .bcam.done .bcam-cap .cdot{background:var(--green);animation:none}
+
+  /* ===== Dijital askıda kahve ===== */
+  .askida{background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--shadow-soft);margin-top:6px;position:relative;overflow:hidden}
+  .askida::after{content:"🫶";position:absolute;right:-12px;bottom:-20px;font-size:96px;opacity:.05}
+  .ask-top{display:flex;align-items:center;gap:13px}
+  .ask-emo{width:48px;height:48px;border-radius:14px;background:rgba(201,138,63,.14);display:grid;place-items:center;font-size:25px;flex:none}
+  .ask-t{font-size:15px;font-weight:800;letter-spacing:-.2px}
+  .ask-t b{color:var(--amber-deep);font-size:19px}
+  .ask-s{font-size:12px;color:var(--muted);margin-top:2px}
+  .ask-desc{font-size:13px;color:var(--muted);line-height:1.5;margin:13px 0 4px}
+  .ask-feed{margin-top:10px}
+  .ask-row{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink);padding:8px 0;border-top:1px solid var(--line)}
+  .ask-row .ava{width:26px;height:26px;border-radius:50%;background:var(--crema-2);display:grid;place-items:center;font-size:13px;flex:none}
+  .ask-row .at{flex:1;min-width:0}.ask-row .at b{font-weight:700}
+  .ask-row .aw{color:var(--muted);font-size:11px;flex:none}
+  .ask-btns{display:flex;gap:9px;margin-top:14px}
+  .ask-give{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:11px 6px;font-weight:800;font-size:14px;
+    cursor:pointer;color:var(--ink);transition:.15s;text-align:center}
+  .ask-give:active{background:var(--crema-2)}
+  .ask-give small{display:block;color:var(--muted);font-size:10px;margin-top:2px;font-weight:700}
+  /* ödeme ekranı askıda satırı */
+  .ask-pay{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:15px;padding:14px;
+    box-shadow:var(--shadow-soft);border:1.5px solid transparent;cursor:pointer;transition:.15s}
+  .ask-pay.on{border-color:var(--amber)}
+  .ask-pay .ap-emo{width:42px;height:42px;border-radius:12px;background:rgba(201,138,63,.14);display:grid;place-items:center;font-size:21px;flex:none}
+  .ask-pay .ap-t{flex:1;min-width:0}.ask-pay .ap-t b{font-size:14px}.ask-pay .ap-t span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+  .ask-pay .ap-sw{width:46px;height:28px;border-radius:30px;background:var(--crema-2);position:relative;flex:none;transition:.2s}
+  .ask-pay .ap-sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.2s}
+  .ask-pay.on .ap-sw{background:var(--amber)} .ask-pay.on .ap-sw::after{left:21px}
+</style>
+</head>
+<body>
+<div id="frame">
+
+  <!-- ============ SPLASH / QR ============ -->
+  <section id="s-splash" class="screen active">
+    <div class="splash-top">
+      <div class="logo"><div class="brandmark">PABLO<small>ARTISAN COFFEE</small></div></div>
+      <div class="qr-card" id="qrCard"></div>
+      <div class="splash-loc" id="splashLoc"></div>
+      <div id="splashBusy"></div>
+      <div id="splashAsk"></div>
+      <div class="splash-hint">Kodu okut, telefondan sipariş ver — <b>kasada sıra yok.</b></div>
+    </div>
+    <div class="splash-bottom">
+      <button class="btn amber" onclick="go('s-menu')">Menüyü Aç →</button>
+      <button class="btn ghost" style="margin-top:10px;color:var(--crema);border-color:rgba(201,138,63,.55)" onclick="aiOpen()">✨ AI'a yaz, sipariş hazırlasın</button>
+      <button class="btn ghost" style="margin-top:10px;color:var(--crema);border-color:rgba(246,239,228,.25)" onclick="go('s-branch')">🛵 Uzaktan / başka şubeden sipariş</button>
+      <button class="btn ghost" style="margin-top:10px;color:var(--amber);border-color:rgba(201,138,63,.5)" onclick="startDemo()">▶ Otomatik Tanıtım Demosu</button>
+      <div class="tagline">Hazır olunca bildirim gelir, hazır rafından alırsın</div>
+      <div class="stafflink"><span onclick="go('s-kds')">● Barista Ekranı</span> &nbsp;·&nbsp; <span onclick="go('s-biz')">İşletme Özeti</span></div>
+    </div>
+  </section>
+
+  <!-- ============ AI İLE SİPARİŞ (doğal dil) ============ -->
+  <section id="s-ai" class="screen">
+    <div class="topbar dark" style="background:#160f1e">
+      <button class="iconbtn" onclick="go('s-menu')">←</button>
+      <h1>✨ AI ile Sipariş</h1>
+      <button class="iconbtn" onclick="aiReset()">⟳</button>
+    </div>
+    <div class="ai-chat" id="aiChat"></div>
+    <div class="ai-chips" id="aiChips"></div>
+    <div class="ai-input">
+      <input id="aiText" type="text" placeholder="örn: iki latte biri yulaf sütlü, bir cheesecake" onkeydown="if(event.key==='Enter')aiSend()" autocomplete="off">
+      <button onclick="aiSend()">Gönder</button>
+    </div>
+  </section>
+
+  <!-- ============ ŞUBE SEÇ (uzaktan sipariş) ============ -->
+  <section id="s-branch" class="screen">
+    <div class="topbar"><button class="iconbtn" onclick="go('s-splash')">←</button><h1>Şube Seç</h1><div class="spacer"></div></div>
+    <div class="hero"><h2>Nereden alacaksın?</h2><p>Uzaktan sipariş ver, sen varınca hazır olsun</p></div>
+    <div class="scroll"><div class="pad" id="branchList"></div></div>
+  </section>
+
+  <!-- ============ MENÜ ============ -->
+  <section id="s-menu" class="screen">
+    <div class="topbar">
+      <button class="iconbtn" onclick="go('s-splash')">←</button>
+      <h1 id="menuBranch">Pablo</h1>
+      <button class="iconbtn" onclick="openTab('loy')">★</button>
+    </div>
+    <div class="menu-head">
+      <div class="hero"><h2>Ne içelim?</h2><p>Taze kavrulmuş çekirdek · kendi fabrikamızdan</p></div>
+      <div class="search">
+        <span class="si">⌕</span>
+        <input id="searchInput" type="search" inputmode="search" placeholder="Kahve, tatlı, içecek ara…" oninput="onSearch(this.value)" autocomplete="off">
+        <button class="sclear" id="sclear" onclick="clearSearch()" style="display:none">✕</button>
+      </div>
+      <div class="cats" id="cats"></div>
+    </div>
+    <div class="scroll" id="menuScroll"><div class="pad">
+      <div class="ai-order" onclick="aiOpen()">
+        <div class="ai-ic">✨</div>
+        <div class="ao-b"><b>AI'a yaz, sipariş hazırlasın</b><span>"2 latte biri yulaf sütlü, 1 cheesecake" — gerisini AI yapar</span></div>
+        <span class="ai-tag">BBAI</span>
+      </div>
+      <div id="usualBar"></div>
+      <div id="favRail"></div>
+      <div id="menuList"></div>
+      <div id="searchEmpty" class="center-empty" style="display:none"><div class="e">🔍</div><b>Sonuç yok</b><span>Başka bir şey aramayı dene</span></div>
+    </div></div>
+    <div class="cartbar">
+      <button class="btn amber" id="goCart" onclick="go('s-cart')" style="display:none">
+        <span class="count" id="cartCount">0</span> Sepete Git
+        <span id="cartTotal" style="margin-left:auto"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ SEPET ============ -->
+  <section id="s-cart" class="screen">
+    <div class="topbar"><button class="iconbtn" onclick="go('s-menu')">←</button><h1>Sepetim</h1><div class="spacer"></div></div>
+    <div class="scroll"><div class="pad" id="cartBody"></div></div>
+    <div class="cartbar" id="cartFoot"></div>
+  </section>
+
+  <!-- ============ ÖDEME ============ -->
+  <section id="s-pay" class="screen">
+    <div class="topbar"><button class="iconbtn" onclick="go('s-cart')">←</button><h1>Ödeme</h1><div class="spacer"></div></div>
+    <div class="scroll"><div class="pad">
+      <div class="opt-title" style="margin-top:6px">Siparişi Kime Hazırlayalım?</div>
+      <div class="namebox"><span class="ni">🙂</span>
+        <input id="nameInput" type="text" maxlength="20" placeholder="Adın — tezgahta seslenelim" oninput="onName(this.value)" autocomplete="given-name">
+      </div>
+      <div class="opt-title">Teslim Zamanı</div>
+      <div class="pickup" id="pickups"></div>
+      <div class="opt-title">Ödeme Yöntemi</div>
+      <div id="payMethods"></div>
+      <div id="payNote"></div>
+      <div class="opt-title">İyilik Yap <span style="text-transform:none;letter-spacing:0;font-weight:600;color:var(--muted)">· opsiyonel</span></div>
+      <div id="askPay"></div>
+      <div class="opt-title">Sipariş Özeti</div>
+      <div class="summary" id="paySummary"></div>
+      <div style="margin-top:16px;font-size:12.5px;color:var(--muted);line-height:1.5;text-align:center">
+        🔒 Ödeme iyzico altyapısıyla güvenle alınır.<br>Demo: gerçek tahsilat yapılmaz.
+      </div>
+    </div></div>
+    <div class="cartbar"><button class="btn amber" id="payBtn" onclick="pay()"></button></div>
+  </section>
+
+  <!-- ============ SİPARİŞ DURUMU ============ -->
+  <section id="s-status" class="screen">
+    <div class="status-head">
+      <div class="order-num">Sipariş No</div>
+      <div class="order-big" id="orderNo">P-204</div>
+      <div class="order-name" id="orderName"></div>
+      <div class="ring">
+        <svg width="150" height="150"><circle cx="75" cy="75" r="66" stroke="rgba(246,239,228,.14)" stroke-width="10" fill="none"/>
+          <circle id="ringP" cx="75" cy="75" r="66" stroke="#c98a3f" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="415" stroke-dashoffset="415"/></svg>
+        <div class="emoji" id="ringEmoji">⏳</div>
+      </div>
+      <div class="eta" id="eta">Tahmini hazırlık: ~4 dk</div>
+      <div class="status-pay" id="statusPay"></div>
+    </div>
+    <div class="steps">
+      <div class="step done" id="st-paid"><div class="dot">✓</div><div><b>Ödeme alındı</b><span>Siparişin mutfağa iletildi</span></div></div>
+      <div class="step" id="st-prep"><div class="dot">☕</div><div><b>Hazırlanıyor</b><span>Barista siparişini yapıyor</span></div></div>
+      <div class="step" id="st-ready"><div class="dot">🔔</div><div><b>Hazır!</b><span>Hazır rafından adınla al</span></div></div>
+    </div>
+    <div id="baristaCam" style="padding:0 0 4px"></div>
+    <div style="flex:1"></div>
+    <div style="padding:0 18px calc(var(--safe-b) + 20px)">
+      <div id="statusAction"></div>
+      <button class="btn ghost" style="color:var(--crema);border-color:rgba(246,239,228,.25)" onclick="finishOrder()">Yeni Sipariş</button>
+    </div>
+  </section>
+
+  <!-- ============ BARİSTA / KDS ============ -->
+  <section id="s-kds" class="screen">
+    <div class="topbar dark" style="background:#160f0b">
+      <button class="iconbtn" onclick="go('s-splash')">←</button>
+      <h1>Barista Ekranı</h1>
+      <button class="iconbtn" onclick="renderKDS()">⟳</button>
+    </div>
+    <div class="kds-stats" id="kdsStats"></div>
+    <div class="scroll" style="background:#120c08"><div class="pad" id="kdsList"></div></div>
+  </section>
+
+  <!-- ============ İŞLETME ÖZETİ (sahip/yönetim) ============ -->
+  <section id="s-biz" class="screen">
+    <div class="topbar dark" style="background:#160f0b">
+      <button class="iconbtn" onclick="go('s-splash')">←</button>
+      <h1>İşletme Özeti</h1><div class="spacer"></div>
+    </div>
+    <div class="scroll" style="background:#120c08"><div class="pad">
+      <div class="biz-hero">
+        <div class="bh-lbl">💰 ÖN ÖDEMELİ CÜZDAN BAKİYESİ</div>
+        <div class="bh-val">₺48.250</div>
+        <div class="bh-sub">Müşterilerin <b>peşin yüklediği</b> para — kahve içilmeden kasanızda. Bu hafta +₺18.900 yüklendi.</div>
+      </div>
+      <div class="biz-grid">
+        <div class="biz-m"><span>Bugün uygulama cirosu</span><b>₺12.480</b></div>
+        <div class="biz-m"><span>Bugünkü sipariş</span><b>92</b></div>
+        <div class="biz-m"><span>Ort. sepet (app)</span><b>₺136</b></div>
+        <div class="biz-m"><span>Tekrar eden müşteri</span><b>%63</b></div>
+        <div class="biz-m"><span>Aktif cüzdan</span><b>418</b></div>
+        <div class="biz-m"><span>Kasa kuyruğu</span><b style="color:#6fe3b0">≈ 0</b></div>
+      </div>
+      <div class="biz-why">
+        <div class="biz-why-t">Ön ödemeli cüzdan size ne kazandırır?</div>
+        <div class="biz-why-i">💵 <b>Peşin nakit:</b> Para satıştan önce kasaya girer (finansman avantajı).</div>
+        <div class="biz-why-i">🔒 <b>Kilitlenme:</b> Bakiyeli müşteri rakibe değil, size döner.</div>
+        <div class="biz-why-i">📈 <b>Daha çok harcama:</b> Cüzdanlı müşteri nakit/karta göre daha fazla harcar.</div>
+        <div class="biz-why-i">🎁 <b>Breakage:</b> Kullanılmayan küsür bakiye → ekstra marj.</div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ GEÇMİŞ SİPARİŞLER (üyelere özel) ============ -->
+  <section id="s-history" class="screen">
+    <div class="topbar"><button class="iconbtn" onclick="go('s-loy')">←</button><h1>Geçmiş Siparişlerim</h1><div class="spacer"></div></div>
+    <div class="scroll"><div class="pad" id="historyBody"></div></div>
+  </section>
+
+  <!-- ============ SADAKAT ============ -->
+  <section id="s-loy" class="screen">
+    <div class="topbar"><button class="iconbtn" onclick="go('s-menu')">←</button><h1>Pablo Club</h1><div class="spacer"></div></div>
+    <div class="scroll"><div class="pad">
+      <div class="loy-card">
+        <div class="lt">Pablo Coffee Go · Damga Kartı</div>
+        <h3>7 al, 8. kahve bizden</h3>
+        <div class="sub" id="loySub">Bir kahve daha = bir damga</div>
+        <div class="stamps" id="stamps"></div>
+        <div class="pts"><b id="ptsVal">0</b><span>puan · her ₺1 = 1 puan</span></div>
+      </div>
+      <div class="integ">✓ Mevcut <b>Pablo Coffee Go</b> sadakatin aktarıldı — damgaların burada devam ediyor.</div>
+      <div id="walletBox"></div>
+      <div class="opt-title">Askıda Kahve</div>
+      <div id="askidaBox"></div>
+      <div class="opt-title">Üyelere Özel</div>
+      <div class="perk"><div class="ic">🎁</div><div><b>Hoş geldin kahvesi</b><span>İlk siparişinde geçerli filtre kahve</span></div></div>
+      <div class="perk"><div class="ic">⚡</div><div><b>Sırada bekleme</b><span>Telefondan öde, hazır olunca bildirim al</span></div></div>
+      <div class="perk"><div class="ic">🎂</div><div><b>Doğum günü sürprizi</b><span>Sana özel tatlı ikramı</span></div></div>
+      <div class="opt-title">Hesabın</div>
+      <div class="perk tap" onclick="go('s-history')"><div class="ic">🧾</div><div><b>Geçmiş Siparişlerim</b><span>Önceki siparişlerini gör ve tekrarla</span></div><span class="perk-go">›</span></div>
+      <div class="perk"><div class="ic">📱</div><div><b id="loyPhone">+90 5•• ••• •• ••</b><span>Telefonla giriş yapıldı</span></div></div>
+    </div></div>
+    <div class="tabbar">
+      <button class="tab" onclick="openTab('menu')"><span class="ti">☕</span>Menü</button>
+      <button class="tab on"><span class="ti">★</span>Club</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- Ürün sheet -->
+<div class="sheet-wrap" id="sheetWrap">
+  <div class="sheet-bg" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<!-- Toast bildirim -->
+<div class="toast" id="toast">
+  <div class="ic">🔔</div>
+  <div><b id="toastTitle">Siparişin hazır!</b><span id="toastBody">P-204 numaralı siparişin hazır rafında.</span></div>
+</div>
+
+<!-- Otomatik demo anlatım barı -->
+<div class="demo-bar" id="demoBar">
+  <div class="demo-inner">
+    <div class="demo-step" id="demoStep">DEMO</div>
+    <div class="demo-cap" id="demoCap"></div>
+    <div class="demo-ctrl">
+      <div class="demo-dots" id="demoDots"></div>
+      <button id="demoBtn" onclick="stopDemo()">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script src="ai.js"></script>
+</body>
+</html>
