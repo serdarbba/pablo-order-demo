@@ -375,6 +375,7 @@
   .ai-input input{flex:1;border:none;outline:none;border-radius:14px;padding:13px 15px;font-size:15px;background:rgba(246,239,228,.12);color:var(--crema)}
   .ai-input input::placeholder{color:rgba(246,239,228,.5)}
   .ai-input button{border:none;background:var(--amber);color:#fff;font-weight:800;border-radius:14px;padding:0 18px;cursor:pointer;font-size:15px}
+  .ai-mic{padding:0!important;width:48px;flex:none;background:rgba(246,239,228,.12)!important;font-size:20px!important}
   .ai-added{background:rgba(47,125,91,.18);border:1px solid rgba(47,125,91,.4)}
   .ai-added .mini{color:#9fe3c2}
   /* AI öneri kartı (menü) */
@@ -586,7 +587,8 @@
     <div class="ai-chat" id="aiChat"></div>
     <div class="ai-chips" id="aiChips"></div>
     <div class="ai-input">
-      <input id="aiText" type="text" placeholder="örn: iki latte biri yulaf sütlü, bir cheesecake" onkeydown="if(event.key==='Enter')aiSend()" autocomplete="off">
+      <button class="ai-mic" onclick="aiMic()" title="Sesli sipariş">🎤</button>
+      <input id="aiText" type="text" placeholder="Yaz ya da 🎤 ile söyle: iki latte biri yulaf sütlü…" onkeydown="if(event.key==='Enter')aiSend()" autocomplete="off">
       <button onclick="aiSend()">Gönder</button>
     </div>
   </section>
@@ -615,13 +617,13 @@
       <div class="cats" id="cats"></div>
     </div>
     <div class="scroll" id="menuScroll"><div class="pad">
-      <div class="ai-order" onclick="aiOpen()">
-        <div class="ai-ic">✨</div>
-        <div class="ao-b"><b>AI'a yaz, sipariş hazırlasın</b><span>"2 latte biri yulaf sütlü, 1 cheesecake" — gerisini AI yapar</span></div>
-        <span class="ai-tag">BBAI</span>
-      </div>
       <div id="usualBar"></div>
       <div id="favRail"></div>
+      <div class="ai-order" onclick="aiOpen()">
+        <div class="ai-ic">✨</div>
+        <div class="ao-b"><b>Alternatif: AI ile sipariş</b><span>Menü gezme — yazarak ya da konuşarak söyle, AI hazırlasın</span></div>
+        <span class="ai-tag">BBAI</span>
+      </div>
       <div id="menuList"></div>
       <div id="searchEmpty" class="center-empty" style="display:none"><div class="e">🔍</div><b>Sonuç yok</b><span>Başka bir şey aramayı dene</span></div>
     </div></div>
@@ -710,33 +712,26 @@
     </div>
     <div class="scroll" style="background:#120c08"><div class="pad">
       <div class="biz-hero">
-        <div class="bh-lbl">💰 ÖN ÖDEMELİ CÜZDAN BAKİYESİ</div>
-        <div class="bh-val">₺48.250</div>
-        <div class="bh-sub">Müşterilerin <b>peşin yüklediği</b> para — kahve içilmeden kasanızda. Bu hafta +₺18.900 yüklendi.</div>
+        <div class="bh-lbl">📱 BUGÜN UYGULAMADAN ALINAN SİPARİŞ</div>
+        <div class="bh-val">92</div>
+        <div class="bh-sub">Hepsi <b>kasaya uğramadan</b> alındı — sıra oluşmadı, tezgah tamamen üretimde. Rakiplerinizde olmayan akış.</div>
       </div>
       <div class="biz-grid">
         <div class="biz-m"><span>Bugün uygulama cirosu</span><b>₺12.480</b></div>
-        <div class="biz-m"><span>Bugünkü sipariş</span><b>92</b></div>
+        <div class="biz-m"><span>Kasa kuyruğu</span><b style="color:#6fe3b0">≈ 0</b></div>
         <div class="biz-m"><span>Ort. sepet (app)</span><b>₺136</b></div>
         <div class="biz-m"><span>Tekrar eden müşteri</span><b>%63</b></div>
+        <div class="biz-m"><span>Ön ödemeli bakiye</span><b>₺48.250</b></div>
         <div class="biz-m"><span>Aktif cüzdan</span><b>418</b></div>
-        <div class="biz-m"><span>Kasa kuyruğu</span><b style="color:#6fe3b0">≈ 0</b></div>
       </div>
       <div class="biz-why biz-gains">
         <div class="biz-why-t">Bu sistemle Pablo ne kazanır?</div>
+        <div class="biz-why-i">⚡ <b>Sıfır kuyruk:</b> Yoğun saatte kasada sıra biter → kaçan müşteri geri gelir, daha çok satış.</div>
+        <div class="biz-why-i">🔁 <b>Sadakat yaratır:</b> Kolay temassız ödeme + puan/cüzdan → daha sık, tekrar ziyaret, markaya bağlılık.</div>
         <div class="biz-why-i">👥 <b>Daha az personel maliyeti:</b> Kasiyer kalkar, ekip tamamen üretime kayar.</div>
-        <div class="biz-why-i">⚡ <b>Daha çok müşteri:</b> Yoğun saatte sıra darboğazı biter → daha çok satış.</div>
-        <div class="biz-why-i">💵 <b>Cüzdan nihayet çalışır:</b> Sipariş akışı mevcut cüzdan kullanımını artırır → daha çok peşin nakit ve harcama.</div>
-        <div class="biz-why-i">🔁 <b>Müşteri sadakati:</b> Kolay temassız ödeme + puan → daha sık, tekrar ziyaret.</div>
         <div class="biz-why-i">📊 <b>Veri sahipliği:</b> Sipariş verisi sizde → kişiye özel AI öneri ve kampanya.</div>
+        <div class="biz-why-i">💵 <b>Cüzdan nihayet çalışır:</b> Sipariş akışı mevcut cüzdanı kullandırır → ekstra peşin nakit.</div>
         <div class="biz-why-i">🧩 <b>Yatırımınız korunur:</b> Mevcut Pablo Coffee Go'nun üstüne biner, sıfırdan değil.</div>
-      </div>
-      <div class="biz-why">
-        <div class="biz-why-t">Ön ödemeli cüzdan size ne kazandırır?</div>
-        <div class="biz-why-i">💵 <b>Peşin nakit:</b> Para satıştan önce kasaya girer (finansman avantajı).</div>
-        <div class="biz-why-i">🔒 <b>Kilitlenme:</b> Bakiyeli müşteri rakibe değil, size döner.</div>
-        <div class="biz-why-i">📈 <b>Daha çok harcama:</b> Cüzdanlı müşteri nakit/karta göre daha fazla harcar.</div>
-        <div class="biz-why-i">🎁 <b>Breakage:</b> Kullanılmayan küsür bakiye → ekstra marj.</div>
       </div>
     </div></div>
   </section>

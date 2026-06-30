@@ -91,6 +91,10 @@ function aiRender(){
   const c=$("#aiChat"); c.scrollTop=c.scrollHeight;
 }
 function aiQuick(s){ $("#aiText").value=s; aiSend(); }
+function aiMic(){
+  aiPush("ai","🎤 Dinliyorum… (sesli sipariş)"); aiRender();
+  setTimeout(()=>{ const i=$("#aiText"); if(i){ i.value="bir büyük latte yulaf sütlü, bir de cheesecake"; aiSend(); } }, 1000);
+}
 function aiSend(){
   const inp=$("#aiText"); const text=(inp.value||"").trim(); if(!text) return;
   aiPush("me", text); inp.value="";
