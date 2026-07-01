@@ -38,16 +38,16 @@
   }
   /* Telefon çerçevesi (masaüstünde demo görünümü) */
   #frame{
-    max-width:430px;margin:0 auto;min-height:100%;position:relative;
+    max-width:430px;margin:0 auto;height:100%;position:relative;
     background:var(--crema);overflow:hidden;
     display:flex;flex-direction:column;
   }
   @media(min-width:520px){
     body{background:radial-gradient(120% 120% at 50% 0%,#241a14 0%,#0d0a08 60%)}
-    #frame{margin:24px auto;min-height:calc(100vh - 48px);border-radius:38px;
+    #frame{margin:24px auto;height:calc(100vh - 48px);border-radius:38px;
       box-shadow:0 40px 80px -30px rgba(0,0,0,.8),0 0 0 10px #000,0 0 0 11px #2a2018;overflow:hidden}
   }
-  .screen{flex:1;display:none;flex-direction:column}
+  .screen{flex:1;min-height:0;display:none;flex-direction:column}
   .screen.active{display:flex;animation:fade .3s ease}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
@@ -61,7 +61,7 @@
   .topbar h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px;flex:1;text-align:center}
   .topbar .spacer{width:40px;flex:none}
 
-  .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .pad{padding:0 18px 24px}
 
   /* Butonlar */
@@ -77,8 +77,9 @@
   .brandmark small{display:block;font-weight:500;letter-spacing:5px;font-size:9px;color:var(--muted);margin-top:3px}
 
   /* ===== SPLASH / QR ===== */
-  #s-splash{background:linear-gradient(165deg,#241a14 0%,#160f0b 100%);color:var(--crema);justify-content:space-between}
-  .splash-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+  #s-splash{background:linear-gradient(165deg,#241a14 0%,#160f0b 100%);color:var(--crema);justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .splash-top{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:26px 30px 16px}
+  #s-splash .splash-bottom{margin-top:auto}
   .qr-card{background:#fff;border-radius:24px;padding:18px;box-shadow:0 20px 50px -20px rgba(0,0,0,.6);animation:pop .5s ease both}
   .qr-card svg{display:block;border-radius:8px}
   .splash-top .logo{margin-bottom:34px}

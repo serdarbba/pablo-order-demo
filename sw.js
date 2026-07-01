@@ -1,5 +1,5 @@
 /* Network-first: online'ken HER ZAMAN en güncel sürüm gelir, offline'da cache fallback (kurulabilirlik bonusu) */
-const CACHE = "pablo-demo-v28";
+const CACHE = "pablo-demo-v29";
 const ASSETS = ["./","./index.html","./app.js","./ai.js","./manifest.json","./icons/icon-192.png","./icons/icon-512.png"];
 
 self.addEventListener("install", e=>{

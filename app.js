@@ -270,7 +270,7 @@ const CAT_EMO = { "Sıcak Kahveler":"☕","Soğuk Kahveler":"🧊","Sıcak İçe
   "Tatlılar":"🍰","Bakery & Atıştırmalık":"🥐","İçecekler":"🥫","Kapsül Kahve":"📦","Ekstralar":"➕" };
 const FAVS = MENU.flatMap(c=>c.items).filter(it=>it.tag);   // etiketli = öne çıkan
 let openCats = new Set(MENU.map((_,i)=>i));                 // hepsi açık başlar
-let searchActive=false, menuWired=false, spyRAF=0;
+let searchActive=false, menuWired=false, spyRAF=0, spyLock=0;
 
 function itemCard(it){
   return `<div class="item" data-name="${it.name.toLowerCase()}" data-desc="${(it.desc||'').toLowerCase()}" onclick="openSheet('${it.id}')">
@@ -342,16 +342,21 @@ function toggleAcc(ci){
   if(el.classList.toggle("open")) openCats.add(ci); else openCats.delete(ci);
 }
 function goCat(ci){
-  const el=document.getElementById("acc-"+ci), sc=$("#menuScroll");
+  const el=document.getElementById("acc-"+ci); if(!el) return;
   el.classList.add("open"); openCats.add(ci);
-  const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 6;
-  sc.scrollTo({top, behavior:"smooth"});
+  spyLock=Date.now()+900;            // scroll-spy bu sürede aktif çipi ezmesin
   setActiveChip(ci);
+  // güvenilir kaydırma: getBoundingClientRect ile #menuScroll içindeki konuma git
+  const sc=$("#menuScroll");
+  if(sc){
+    const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 4;
+    sc.scrollTop = top;   // anlık (güvenilir)
+  }
 }
 function onMenuScroll(){
   if(spyRAF) return;
   spyRAF=requestAnimationFrame(()=>{
-    spyRAF=0; if(searchActive) return;
+    spyRAF=0; if(searchActive || Date.now()<spyLock) return;
     const sc=$("#menuScroll"); const line=sc.getBoundingClientRect().top+72;
     let cur=0;
     MENU.forEach((c,ci)=>{ const el=document.getElementById("acc-"+ci); if(el && el.getBoundingClientRect().top<=line) cur=ci; });
