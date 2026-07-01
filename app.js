@@ -818,21 +818,50 @@ function reorderHist(idx){
   refreshCartBar(); go("s-cart");
 }
 
-/* ---------- Otomatik Tanıtım Demosu (anlatımlı, yavaş akan) ---------- */
-let demoTimer=null, demoStop=true;
-function demoSleep(ms){ return new Promise(r=>{ demoTimer=setTimeout(r,ms); }); }
+/* ---------- Otomatik Tanıtım Demosu (anlatımlı, yavaş akan + manuel kontrol) ---------- */
+let demoTimer=null, demoStop=true, demoPaused=false, demoIdx=0, demoSteps=[];
 function setCap(step,text,i,total){
   $("#demoStep").textContent=step; $("#demoCap").textContent=text;
   $("#demoDots").innerHTML=Array.from({length:total},(_,k)=>`<span class="demo-dot ${k<=i?'on':''}"></span>`).join("");
 }
-async function startDemo(){
-  stopDemo(); demoStop=false;
+function demoUpdatePlayBtn(){
+  const p=$("#demoPlayBtn"); if(p) p.textContent = demoPaused ? "▶" : "⏸";
+}
+function demoGoStep(i){
+  if(demoStop) return;
+  clearTimeout(demoTimer);
+  if(i<0) i=0;
+  if(i>=demoSteps.length){ demoFinish(); return; }
+  demoIdx=i;
+  demoSteps[i].fn && demoSteps[i].fn();
+  setCap(demoSteps[i].s, demoSteps[i].c, i, demoSteps.length);
+  demoUpdatePlayBtn();
+  if(!demoPaused){
+    demoTimer=setTimeout(()=>demoGoStep(demoIdx+1), demoSteps[i].w||6800);
+  }
+}
+function demoNext(){ demoPaused=true; demoUpdatePlayBtn(); demoGoStep(demoIdx+1); }
+function demoPrev(){ demoPaused=true; demoUpdatePlayBtn(); demoGoStep(demoIdx-1); }
+function demoTogglePause(){
+  if(demoStop) return;
+  demoPaused=!demoPaused; demoUpdatePlayBtn(); clearTimeout(demoTimer);
+  if(!demoPaused) demoTimer=setTimeout(()=>demoGoStep(demoIdx+1), demoSteps[demoIdx]?.w||6800);
+}
+function demoFinish(){
+  demoStop=true; clearTimeout(demoTimer);
+  $("#demoStep").textContent="✓ Demo bitti";
+  $("#demoCap").textContent="Tüm akışı gördün — baştan almak ister misin?";
+  const rb=$("#demoBtn"); rb.textContent="▶ Tekrar"; rb.className="demo-replay"; rb.onclick=startDemo;
+}
+function startDemo(){
+  stopDemo(); demoStop=false; demoPaused=false; demoIdx=0;
   state.member=true; localStorage.setItem("pablo_member","1");
   state.name="Serdar"; state.cart=[]; state.pickupMin=0; state.pay="wallet"; wallet=750; saveWallet();
   const b=$("#demoBtn"); b.textContent="Kapat"; b.className=""; b.onclick=stopDemo;
   $("#demoBar").classList.add("show");
+  demoUpdatePlayBtn();
   let savedCart=[];
-  const steps=[
+  demoSteps=[
     {fn:()=>go("s-splash"), s:"1 · Başlangıç", c:"Müşteri QR'ı okutur. Şube tanınır + tezgah yoğunluğu CANLI görünür (sakin/yoğun) — kasaya gitmek yok."},
     {fn:()=>go("s-menu"), s:"2 · Menü (birincil)", c:"Direkt menüden seç: arama, kategoriler, 'En Sevilenler'. Sırada beklemeden, rahatça."},
     {fn:()=>openSheet("karamelmac"), s:"3 · Özelleştirme", c:"Süt tercihi, ekstra shot... her kahve kişiye göre. Tezgahta 'nasıl olsun' muhabbeti yok."},
@@ -848,18 +877,9 @@ async function startDemo(){
     {fn:()=>go("s-biz"), s:"13 · Pablo Ne Kazanır", c:"İki ana kazanç: SIFIR KUYRUK (yoğun saatte kaçan müşteri geri gelir) ve SADAKAT (kolay ödeme + puanla tekrar ziyaret). Üstüne: az personel, veri sahipliği, peşin nakit."},
     {fn:()=>go("s-splash"), s:"✓ Özet", c:"İzmirli, büyüyen Pablo'yu rakiplerinden ayıran sistem: sırayı bitirir, sadakat yaratır — mevcut app'inizin ÜSTÜNE. İstenirse: WhatsApp & Barista Cam. Final: Web, Android, iOS. BBAI."},
   ];
-  for(let i=0;i<steps.length;i++){
-    if(demoStop) return;
-    steps[i].fn && steps[i].fn();
-    setCap(steps[i].s, steps[i].c, i, steps.length);
-    await demoSleep(steps[i].w||6800);
-  }
-  if(demoStop) return;
-  $("#demoStep").textContent="✓ Demo bitti";
-  $("#demoCap").textContent="Tüm akışı gördün — baştan almak ister misin?";
-  const rb=$("#demoBtn"); rb.textContent="▶ Tekrar"; rb.className="demo-replay"; rb.onclick=startDemo;
+  demoGoStep(0);
 }
-function stopDemo(){ demoStop=true; clearTimeout(demoTimer); $("#demoBar").classList.remove("show");
+function stopDemo(){ demoStop=true; demoPaused=false; clearTimeout(demoTimer); $("#demoBar").classList.remove("show");
   const b=$("#demoBtn"); if(b){ b.textContent="Kapat"; b.className=""; b.onclick=stopDemo; } }
 
 /* ---------- Derin link (QR doğrudan şube/menü açabilir + demo) ---------- */
