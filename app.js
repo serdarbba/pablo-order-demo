@@ -924,9 +924,24 @@ function deepLink(){
   if(q.get("demo")) startDemo();
 }
 
+/* ---------- Ziyaret bildirimi (ntfy.sh push) ---------- */
+function notifyVisit(){
+  try{
+    if(sessionStorage.getItem("pablo_visit_notified")) return;
+    sessionStorage.setItem("pablo_visit_notified","1");
+    const ref = document.referrer ? (new URL(document.referrer)).hostname : "doğrudan";
+    fetch("https://ntfy.sh/bba-pablo-demo-78b0f9e18f", {
+      method:"POST",
+      headers:{"Title":"Pablo demo ziyareti","Tags":"eyes"},
+      body:`Biri demoyu açtı · kaynak: ${ref} · ${new Date().toLocaleString("tr-TR")}`
+    }).catch(()=>{});
+  }catch(e){}
+}
+
 /* ---------- Başlat ---------- */
 drawQR();
 deepLink();
+notifyVisit();
 renderSplash();
 // Canlı yoğunluk: splash açıkken periyodik tazele (canlı his)
 setInterval(()=>{ const sp=document.getElementById("s-splash"); if(sp && sp.classList.contains("active")){ renderSplashBusy(); renderSplashAsk(); } }, 5000);
